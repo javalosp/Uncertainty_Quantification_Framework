@@ -1,0 +1,47 @@
+{
+    "flow_map": {
+        "Cu_Mining": "Map_Mining",
+        "Cu_Refining": "Map_Refining",
+        "Cu_Demand": "Map_Demand",
+        "Cu_EOL_Scrap": "Map_EOL",
+        "Cu_Recycling": "Map_Recycling",
+        "Cu_Landfill": "Map_Landfill"
+    },
+    "proxy_map": {
+        "Cu_Demand": "Global_GDP"
+    },
+    "delay_map": {
+        "Cu_EOL_Scrap": {
+            "min": 20,
+            "mode": 30,
+            "max": 40,
+            "std": 5
+        }
+    },
+    "topology_map": {
+        "Cu_Mining": {
+            "Source": "Environment",
+            "Target": "Smelting"
+        },
+        "Cu_Refining": {
+            "Source": "Smelting",
+            "Target": "Manufacturing"
+        },
+        "Cu_Demand": {
+            "Source": "Manufacturing",
+            "Target": "In-Use_Stock"
+        },
+        "Cu_EOL_Scrap": {
+            "Source": "In-Use_Stock",
+            "Target": "Waste_Management"
+        },
+        "Cu_Recycling": {
+            "Source": "Waste_Management",
+            "Target": "Smelting"
+        },
+        "Cu_Landfill": {
+            "Source": "Waste_Management",
+            "Target": "Environment"
+        }
+    }
+}

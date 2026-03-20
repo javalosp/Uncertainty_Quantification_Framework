@@ -1,0 +1,51 @@
+# Ignore output files but keep the directories
+outputs/benchmark_results/*
+outputs/LCA_results/*
+outputs/MFA_results/*
+!outputs/benchmark_results/.gitkeep
+!outputs/LCA_results/.gitkeep
+!outputs/MFA_results/.gitkeep
+
+# Ignore generated data files but keep directories
+data/MFA/benchmark/processed_data/*
+data/MFA/benchmark/posterior_baseline/*
+!data/MFA/benchmark/processed_data/.gitkeep
+!data/MFA/benchmark/posterior_baseline/.gitkeep
+
+# PBS logs
+*.pbs.*
+
+# System and editor files
+# Windows
+Thumbs.db
+# macOS
+.DS_Store
+# Linux/macOS core dump files
+core
+*.core
+
+# Vim temporary files
+*~
+*.swp
+*.swo
+
+# VSCode
+/.vscode/*
+.vscode/
+
+# Python
+__pycache__/
+/src/__pycache__/
+.ipynb_checkpoints
+*.pyc
+*.pyo
+*.pyd
+.cache/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Local data
+
