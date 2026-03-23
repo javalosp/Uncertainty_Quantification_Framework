@@ -26,7 +26,7 @@ The result is a **Probability Box (P-Box)** that shows the "Ignorance Gap," allo
 * **Continuous Mass-Balance Engine:** Forecasts complex, multi-node material cycles (e.g., global aluminum or copper cycles) over time (e.g., 2024 to 2050).
 * **Machine Learning Preprocessing:** Replaces subjective data scoring (as the Pedigree Matrix in LCA) with algorithmic *Data Quality Indicators* (DQIs), for determining metrics of ignorance related to missing data.
 * **Multi-Model Proxy Forecasting:** Maps future flows to proxies (e.g., GDP) using an ensemble of Linear Regression, Ridge Regression, and Decision Trees. The divergence between algorithms explicitly forms the structural *Epistemic* envelope.
-* **Interactive Visualizations:** Generates multiple relevant charts, including: Sankey, network topologies, and temporal charts.
+* **Interactive Visualisations:** Generates multiple relevant charts, including: Sankey, network topologies, and temporal charts.
 ---
 
 ### Project Structure
@@ -42,7 +42,7 @@ project_root/
 ├── src/
 │   ├── classify.py                     # Module 1: Data Manager & Classifier
 │   ├── propagate.py                    # Module 2: Hybrid IRS Propagation Engine
-│   └── report.py                       # Module 3: Visualization & Reporting
+│   └── report.py                       # Module 3: Visualisation & Reporting
 │
 ├── main.py                             # Main Script (Run this)
 ├── requirements.txt                    # Python dependencies

@@ -37,7 +37,7 @@ class LCIDataManager:
         if 'Unnamed: 0' in df.columns:
             df.rename(columns={'Unnamed: 0': 'Flow_Name'}, inplace=True)
 
-        # MAP SPECIFIC FILE HEADERS TO INTERNAL LOGIC KEYS
+        # Map specific file headers to internal logic keys
         col_map = {
             'Standard deviation': 'GSD',
             'Per 1 m3 of desalinated water': 'Mean',
@@ -59,8 +59,8 @@ class LCIDataManager:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
         
         # Filter out section headers (rows where GSD is missing)
-        # CRITICAL: We create a copy of the dataframe here. 
-        # All columns not in 'cols_to_numeric' (like 'Contrib_Header') SHOULD be preserved.
+        # Creating a copy of the dataframe
+        # All columns not in 'cols_to_numeric' (like 'Contrib_Header') should be preserved.
         self.data = df.dropna(subset=['GSD']).copy()
         
         # Fill missing scores with 1
@@ -97,7 +97,7 @@ class LCIDataManager:
         
         df['Uncertainty_Type'] = df.apply(classify, axis=1)
         
-        # DEBUG CHECK: Ensure 'Contrib_Header' is still here
+        # Ensure 'Contrib_Header' is still here (for debugging)
         if 'Contrib_Header' not in df.columns:
             print("WARNING: 'Contrib_Header' column lost during classification logic.")
         
@@ -124,17 +124,20 @@ class LCIDataManager:
             if mean <= 0 or gsd <= 0:
                 continue
 
-            # Aleatory Math
+            # Aleatory maths
             sigma_ln = np.log(gsd)
             mu_ln = np.log(mean) - 0.5 * sigma_ln**2
             
-            # Epistemic Math
+            # Epistemic maths
             fuzzy_min = mean / (gsd**2)
             fuzzy_max = mean * (gsd**2)
             
-            # Get the SimaPro Mapping Header
+            # Get the SimaPro mapping header
             # Using simple access to ensure we get the value
-            contrib_header = row['Contrib_Header'] if 'Contrib_Header' in row else None
+            if 'Contrib_Header' in row:
+                contrib_header = row['Contrib_Header']
+            else:
+                None
 
             results.append({
                 'Flow_Name': row['Flow_Name'],
@@ -142,7 +145,7 @@ class LCIDataManager:
                 'Params_Aleatory': {'mu_ln': mu_ln, 'sigma_ln': sigma_ln},
                 'Params_Epistemic': {'min': fuzzy_min, 'mode': mean, 'max': fuzzy_max},
                 'Raw_Mean': mean,
-                'Contrib_Header': contrib_header # Critical for mapping from Contributions file!
+                'Contrib_Header': contrib_header # Critical for mapping from contributions file!
             })
             
         return pd.DataFrame(results)
@@ -162,7 +165,7 @@ class DynamicDataManager(LCIDataManager):
     def characterise_dynamic_variables(self):
         """
         Projects base parameters over the temporal horizon and calculates 
-        epistemic bounds and aleatory parameters for EVERY time step t.
+        epistemic bounds and aleatory parameters for every time step t.
         """
         if self.classified_data is None:
             raise ValueError("Data not classified. Call classify_uncertainty() first.")
@@ -181,8 +184,7 @@ class DynamicDataManager(LCIDataManager):
             if base_mean <= 0 or gsd <= 0:
                 continue
             
-            # GAUSSIAN PROCESS INTEGRATION
-            # ====================================================================
+            # Gaussian process integration
             if growth_type in ['GP_Forecast', 'Proxy_Ensemble']:
                 # The arrays are already fully formed by the Gaussian Process in preprocess_dynamic.py
                 mode_ts = np.array(row['GP_Mean_TS'])
@@ -194,7 +196,7 @@ class DynamicDataManager(LCIDataManager):
                 mu_ln_ts = np.log(mode_ts + 1e-9) - 0.5 * sigma_ln_ts**2 
                 
             else:
-                # STANDARD PATH: Initialize arrays to store mathematically projected parameters
+                # Standard path: Initialise arrays to store mathematically projected parameters
                 mu_ln_ts = np.zeros(self.n_steps)
                 sigma_ln_ts = np.zeros(self.n_steps) 
                 min_ts = np.zeros(self.n_steps)
@@ -202,7 +204,7 @@ class DynamicDataManager(LCIDataManager):
                 max_ts = np.zeros(self.n_steps)
 
                 for t in range(self.n_steps):
-                    # 1. Project the mean over time step t
+                    # Project the mean over time step t according to the growth type
                     if growth_type == 'Compound':
                         mean_t = base_mean * ((1 + growth_rate) ** t)
                     elif growth_type == 'Linear':
@@ -210,11 +212,11 @@ class DynamicDataManager(LCIDataManager):
                     else: # Constant
                         mean_t = base_mean
 
-                    # 2. Characterise Aleatory (Lognormal) for time t
+                    # Characterise Aleatory (Lognormal) for time t
                     sigma_ln = np.log(gsd)
                     mu_ln = np.log(mean_t) - 0.5 * sigma_ln**2
                     
-                    # 3. Characterise Epistemic (Fuzzy Intervals) for time t
+                    # Characterise Epistemic (Fuzzy Intervals) for time t
                     fuzzy_min = mean_t / (gsd**2)
                     fuzzy_max = mean_t * (gsd**2)
                     

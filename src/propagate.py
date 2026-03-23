@@ -128,7 +128,7 @@ class DynamicPropagationEngine(HybridPropagationEngine):
         """
         Runs the propagation over time for multiple levels of possibility (alpha-cuts).
         Generates N trajectories over T time steps.
-        NEW: Caches individual flow-level arrays for Sankey topology visualization.
+        NEW: Caches individual flow-level arrays for Sankey topology visualisation.
         """
         if not self.impact_factors:
             print("Warning: Dynamic flow model (k-factors) not defined.")

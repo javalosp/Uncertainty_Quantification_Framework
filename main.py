@@ -468,7 +468,7 @@ def run_dynamic_mfa_analysis(config):
     # Safely check if the user defined 'Source' and 'Target' columns before drawing
     if 'Source' in dynamic_params.columns and 'Target' in dynamic_params.columns:
         for target_year in milestone_years:
-            print(f"      -> Building Visualizations for {target_year}...")
+            print(f"      -> Building Visualisations for {target_year}...")
             
             # 1. Generate the Mass-Balance Sankey
             sankey_filename = os.path.join(output_dir, f"uncertainty_sankey_{target_year}.html")

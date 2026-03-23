@@ -3,14 +3,14 @@ import numpy as np
 
 class MFAAuditParser:
     """
-    Ingests and validates a static, published MFA dataset for retrospective auditing.
-    Extracts network topology and categorizes uncertainty for the Hybrid IRS engine.
+    Ingests and validates a static MFA dataset for retrospective auditing.
+    Extracts network topology and categorises uncertainty for the Hybrid IRS engine.
     """
     def __init__(self, filepath):
         self.filepath = filepath
         self.raw_data = None
         
-        # Parsed categorizations for the math engine
+        # Parsed categorisations for the math engine
         self.nodes = set()
         self.topology_edges = []
         self.aleatory_params = {}
@@ -20,7 +20,7 @@ class MFAAuditParser:
 
     def load_and_validate(self):
         """Loads the Excel schema and ensures all required columns exist."""
-        print(f"[*] Loading published MFA schema from {self.filepath}...")
+        print(f"[*] Loading MFA schema from {self.filepath}...")
         self.raw_data = pd.read_excel(self.filepath)
         
         required_cols = [
@@ -35,13 +35,13 @@ class MFAAuditParser:
         print(f"[*] Successfully loaded {len(self.raw_data)} parameters.")
 
     def parse_network(self):
-        """Builds the physical network map and categorizes parameters for the IRS engine."""
+        """Builds the physical network map and categorises parameters for the IRS engine."""
         print("[*] Parsing network topology and uncertainty classifications...")
         
         for index, row in self.raw_data.iterrows():
             param_id = row['Parameter_ID']
             
-            # 1. Build Network Topology
+            # Build network topology
             if pd.notna(row['Source_Node']) and pd.notna(row['Target_Node']):
                 self.nodes.add(row['Source_Node'])
                 self.nodes.add(row['Target_Node'])
@@ -52,7 +52,7 @@ class MFAAuditParser:
                     'type': row['Type']
                 })
 
-            # 2. Categorize by Math Execution Type
+            # Categorise by math execution type
             if row['Status'] == 'Calculated':
                 self.calculated_params[param_id] = row.to_dict()
                 continue

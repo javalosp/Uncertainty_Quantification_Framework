@@ -20,7 +20,7 @@ class RobustnessReporter:
             Visualise the 'ignorance gap' (P-Box).
             Calculate the 'ignorance penalty' (Safety buffer required due to poor data).
             (Optional: Report compliance probability against the given limits.)
-        Handles Fuzzy Results (Dictionary of DataFrames) by prioritizing:
+        Handles Fuzzy Results (Dictionary of DataFrames) by prioritising:
         - Alpha=0 (The Envelope): For Safety/Conservative reporting.
         - Alpha=1 (The Core): For "Most Plausible" insight.
     """
@@ -609,7 +609,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
                 arrows='to'
             )
 
-        # 3. Apply physics layout for automatic organization
+        # 3. Apply physics layout for automatic organisation
         # We use hierarchical repulsion so nodes don't overlap in complex models
         net.repulsion(node_distance=200, central_gravity=0.2, spring_length=200, spring_strength=0.05, damping=0.09)
         
@@ -622,7 +622,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
 
 class AuditReporter:
     """
-    Handles the generation of diagnostic visualizations for retrospective MFA audits.
+    Handles the generation of diagnostic visualisations for retrospective MFA audits.
     Separated from the dynamic forecasting reporters to maintain strict domain boundaries.
     """
     def __init__(self, df_results):

@@ -16,7 +16,7 @@ class TestStaticReconciliationEngine(unittest.TestCase):
     def test_under_determined_system_raises_error(self):
         """
         Tests if the solver correctly identifies and rejects a network 
-        where a node has more than one unknown (Calculated) flow.
+        where a node has more than one unknown (calculated) flow.
         """
         # Setup an unsolvable mock network
         # Node_A receives 100 units, but splits into TWO unknown flows going to the environment.
@@ -48,7 +48,7 @@ class TestStaticReconciliationEngine(unittest.TestCase):
         # Verify the error message contains the expected warning
         self.assertTrue("Under-determined System" in str(context.exception))
         
-        print("\n Test successful: The solver correctly rejected the under-determined system.")
+        print("\n [PASSED] Rejection of under-determined MFA system.")
 
     def test_valid_system_resolves_correctly(self):
         """
@@ -74,7 +74,7 @@ class TestStaticReconciliationEngine(unittest.TestCase):
             }
         }
 
-        # 2. Instantiate the solver
+        # Instantiate the solver
         solver = StaticReconciliationEngine(mock_network)
 
         # Provide the known iteration values
@@ -95,7 +95,7 @@ class TestStaticReconciliationEngine(unittest.TestCase):
         self.assertEqual(resolved_state['Flow_Internal'], 80.0)
         self.assertEqual(resolved_state['Flow_Product'], 80.0)
         
-        print("\n[✔] Success: Solver correctly balanced the valid system.")
+        print("\n [PASSED] Balance MFA valid system.")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

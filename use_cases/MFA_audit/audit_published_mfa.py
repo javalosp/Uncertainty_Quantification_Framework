@@ -128,7 +128,7 @@ def execute_mfa_audit():
     print("="*80)
 
     # 9. Generate the Diagnostic Tornado Chart
-    print("\n[*] Generating Sensitivity Visualizations...")
+    print("\n[*] Generating Sensitivity Visualisations...")
     
     try:
         from src.report import AuditReporter

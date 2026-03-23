@@ -96,7 +96,7 @@ class SensitivityAnalyser:
             if combined_magnitude > max_score:
                 max_score = combined_magnitude
         
-        # Final Normalization
+        # Final Normalisation
         total_magnitude = sum(x['Combined_Score'] for x in processed_stats)
         
         final_results = []

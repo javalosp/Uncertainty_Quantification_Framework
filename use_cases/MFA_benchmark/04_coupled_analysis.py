@@ -114,7 +114,7 @@ def execute_handshake_pipeline(posterior_filepath):
     }
 
     try:
-        print("\n[*] Initializing P-Box Engine with Bayesian Baseline...")
+        print("\n[*] Initialising P-Box Engine with Bayesian Baseline...")
         results_map = run_dynamic_mfa_analysis(HANDSHAKE_CONFIG)
         
         print("\n[HANDSHAKE SUCCESS] The models have been successfully chained.")

@@ -112,7 +112,7 @@ def run_full_validation():
     Sets up the testing configuration and executes the Master Pipeline.
     """
     print("="*70)
-    print(" INITIALIZING FULL EMPIRICAL INTEGRATION TEST")
+    print(" INITIALISING FULL EMPIRICAL INTEGRATION TEST")
     print("="*70)
 
     # The Configuration Dictionary (Exactly how a user will run your code)
