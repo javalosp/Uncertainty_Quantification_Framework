@@ -31,6 +31,6 @@ jobs:
         pip install -r requirements.txt
 
     # Run tests using Python's built-in discover tool to find and run all test_*.py files in the tests/ folder
-    - name: Execute Unit Tests
+    - name: Run Unit Tests
       run: |
         python -m unittest discover -s tests/ -p "test_*.py" -v

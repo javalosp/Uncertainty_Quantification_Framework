@@ -15,7 +15,7 @@ class TestLCIDataManager(unittest.TestCase):
     Unit tests for the LCA Module (Data classification and characterisation).
     """
     
-    def setup(self):
+    def setUp(self):
         """
         Creates a mock dataframe for testing.
         The data is intentionally defined to trigger specific if/else logic paths in the engine.

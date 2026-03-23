@@ -16,7 +16,7 @@ class TestEmpiricalDataProcessor(unittest.TestCase):
     Unit tests for the Machine Learning and Empirical Data Preprocessor.
     """
 
-    def setup(self):
+    def setUp(self):
         """
         Suppress the convergence warnings from scikit-learn during automated 
         testing, considering that tests intentionally use edge-case dummy data.
