@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.stats import spearmanr
 import sys
 from pyvis.network import Network
 
@@ -10,6 +11,7 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 import sys
+import warnings
 
 class RobustnessReporter:
     """
@@ -617,6 +619,70 @@ class DynamicRobustnessReporter(RobustnessReporter):
         # 4. Save to HTML
         net.write_html(filename)
         print(f"[Module 3 - Dynamic] Network Topology Graph saved to {filename}")
+
+class AuditReporter:
+    """
+    Handles the generation of diagnostic visualizations for retrospective MFA audits.
+    Separated from the dynamic forecasting reporters to maintain strict domain boundaries.
+    """
+    def __init__(self, df_results):
+        """
+        Args:
+            df_results (pd.DataFrame): The full simulation matrix from the IRS engine.
+        """
+        self.df_results = df_results
+
+    def generate_diagnostic_tornado_chart(self, target_param, input_params, filename):
+        """
+        Generates an interactive Plotly Tornado Chart to rank the sensitivity 
+        of a target calculated parameter against all sampled inputs.
+        """
+        correlations = {}
+        
+        # Guardrail if the target parameter wasn't successfully calculated
+        if target_param not in self.df_results.columns:
+            print(f"[!] Cannot generate Tornado Chart: '{target_param}' missing from results.")
+            return
+
+        target_data = self.df_results[target_param]
+        
+        # Calculate Spearman Rank Correlation for each input
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for param in input_params:
+                if param in self.df_results.columns:
+                    corr, _ = spearmanr(self.df_results[param], target_data)
+                    # If an input was entirely static (e.g., zero variance), corr is NaN
+                    correlations[param] = 0.0 if np.isnan(corr) else corr
+
+        # Sort parameters by absolute correlation strength
+        sorted_params = sorted(correlations.keys(), key=lambda x: abs(correlations[x]))
+        sorted_corrs = [correlations[p] for p in sorted_params]
+        
+        # Color code: Blue for positive correlation, Red for negative (inverse) correlation
+        colors = ['#ef553b' if c < 0 else '#636efa' for c in sorted_corrs]
+
+        # Build the interactive Plotly figure
+        fig = go.Figure(go.Bar(
+            x=sorted_corrs,
+            y=sorted_params,
+            orientation='h',
+            marker_color=colors,
+            text=[f"{c:.2f}" for c in sorted_corrs],
+            textposition='auto'
+        ))
+
+        fig.update_layout(
+            title=f"Diagnostic Tornado Chart: Drivers of Ignorance for '{target_param}'",
+            xaxis_title="Spearman Rank Correlation Coefficient (Impact Strength)",
+            yaxis_title="Published Input Parameters",
+            template="plotly_white",
+            xaxis=dict(range=[-1.1, 1.1], zeroline=True, zerolinewidth=2, zerolinecolor='black'),
+            height=max(400, len(input_params) * 50) # Auto-scale height based on number of inputs
+        )
+        
+        fig.write_html(filename)
+        print(f"[*] Tornado Chart generated successfully: {filename}")
 
 
 # --- UNIT TEST BLOCK ---

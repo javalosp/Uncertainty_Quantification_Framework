@@ -227,6 +227,91 @@ class DynamicPropagationEngine(HybridPropagationEngine):
         print("[Module 2 - Dynamic] Continuous MFA Simulation Complete.")
         return self.dynamic_results
 
+class StaticReconciliationEngine:
+    """
+    Enforces strict Mass Balance for Retrospective MFA Auditing.
+    Algebraically solves for 'Calculated' flows during every Monte Carlo 
+    and Interval Arithmetic iteration.
+    """
+    def __init__(self, parsed_network):
+        """
+        Args:
+            parsed_network (dict): The exact dictionary returned by MFAAuditParser.parse_network()
+        """
+        self.nodes = parsed_network['nodes']
+        self.edges = parsed_network['edges']
+        self.calculated_params = parsed_network['calculated']
+        
+        # Build a fast-lookup map for the topology (who connects to whom)
+        self.node_map = {node: {'in': [], 'out': []} for node in self.nodes}
+        
+        for edge in self.edges:
+            param_id = edge['id']
+            # Only track mass flows (ignore pure percentage transfer coefficients for the additive balance)
+            if edge['type'].lower() == 'flow':
+                if edge['target'] in self.node_map:
+                    self.node_map[edge['target']]['in'].append(param_id)
+                if edge['source'] in self.node_map:
+                    self.node_map[edge['source']]['out'].append(param_id)
+
+    def resolve_mass_balance(self, iteration_values):
+        """
+        Takes a dictionary of the current Monte Carlo / Interval samples, 
+        and solves for the missing 'Calculated' parameters algebraically.
+        
+        Args:
+            iteration_values (dict): e.g. {'Import_Bauxite': 42.5, 'Primary_Aluminum': 38.1}
+        Returns:
+            dict: A fully balanced mass matrix for this iteration.
+        """
+        resolved = iteration_values.copy()
+        unresolved_ids = set(self.calculated_params.keys())
+        
+        # Iterative Solver Loop (The "Sudoku" Method)
+        progress = True
+        while unresolved_ids and progress:
+            progress = False
+            
+            for node, flows in self.node_map.items():
+                # The 'Environment' is an infinite source/sink. We do not balance it.
+                if node.lower() == 'environment':
+                    continue
+                    
+                in_flows = flows['in']
+                out_flows = flows['out']
+                
+                # Check how many unknowns are connected to this specific node
+                unknowns = [f for f in (in_flows + out_flows) if f in unresolved_ids]
+                
+                # We can only solve the node algebraically if exactly ONE flow is missing
+                if len(unknowns) == 1:
+                    target_unknown = unknowns[0]
+                    
+                    # Sum up all the known mass entering and leaving this node
+                    sum_in = sum(resolved.get(f, 0.0) for f in in_flows if f != target_unknown)
+                    sum_out = sum(resolved.get(f, 0.0) for f in out_flows if f != target_unknown)
+                    
+                    # Conservation of Mass: Inputs = Outputs
+                    if target_unknown in in_flows:
+                        # Missing Input = Known Outputs - Known Inputs
+                        resolved[target_unknown] = max(sum_out - sum_in, 0.0)
+                    else:
+                        # Missing Output = Known Inputs - Known Outputs
+                        resolved[target_unknown] = max(sum_in - sum_out, 0.0)
+                        
+                    # Mark as solved and trigger another pass
+                    unresolved_ids.remove(target_unknown)
+                    progress = True
+        
+        # Guardrail: If the loop finishes but flows are still unresolved, 
+        # the user's published paper has a mathematically under-determined system.
+        if unresolved_ids:
+            raise ValueError(
+                f"[!] Under-determined System: The published MFA lacks enough "
+                f"measured data to solve for: {unresolved_ids}"
+            )
+            
+        return resolved
 
 # UNIT TEST BLOCK
 # (run the module directly, i.e.: python propagate.py)
