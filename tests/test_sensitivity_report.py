@@ -18,10 +18,10 @@ class TestSensitivityAndReporting(unittest.TestCase):
 
     def test_analytical_sensitivity_math(self):
         """
-        Tests if the SensitivityAnalyser correctly normalizes and combines 
+        Tests if the SensitivityAnalyser correctly normalises and combines 
         Epistemic Widths and Aleatory Variances into the S_Combined score.
         """
-        # 1. Setup Mock Data
+        # Setup mock data
         mock_data = pd.DataFrame([
             {
                 'Flow_Name': 'Epistemic_Flow',
@@ -41,14 +41,14 @@ class TestSensitivityAndReporting(unittest.TestCase):
 
         k_map = {'Epistemic_Flow': 1.0, 'Aleatory_Flow': 1.0}
         
-        # 2. Run the Analyser
+        # Run the Analyser
         analyser = SensitivityAnalyser(mock_data, k_map)
         results = analyser.run_analysis()
         
         epi_row = results[results['Flow_Name'] == 'Epistemic_Flow'].iloc[0]
         ale_row = results[results['Flow_Name'] == 'Aleatory_Flow'].iloc[0]
 
-        # 3. Expected Mathematical Derivations
+        # Expected Mathematical Derivations
         # Aleatory Range calculation mapped from src/sensitivity.py logic:
         # var = exp(2*0 + 0.01) * (exp(0.01) - 1) = 1.01005 * 0.01005 = ~0.01015
         # std_dev = sqrt(0.01015) = ~0.10075
@@ -62,7 +62,7 @@ class TestSensitivityAndReporting(unittest.TestCase):
         expected_s_combined_epi = expected_epistemic_width / total_magnitude
         expected_s_combined_ale = expected_aleatory_range / total_magnitude
 
-        # 4. Assertions
+        # Assertions
         # Verify 100% of Epistemic ignorance is assigned to the epistemic flow
         self.assertEqual(epi_row['S_Epistemic'], 1.0)
         # Verify 100% of Aleatory variance is assigned to the aleatory flow
@@ -81,7 +81,7 @@ class TestSensitivityAndReporting(unittest.TestCase):
         Tests if the RobustnessReporter correctly extracts the P05, P50, and P95 
         percentiles from the simulation arrays to calculate the final Executive Report metrics.
         """
-        # 1. Setup predictable linear distributions
+        # Setup predictable linear distributions
         # np.linspace(0, 100, 101) creates an array [0, 1, 2... 100]
         # In this array, the 5th percentile is exactly 5.0, 50th is 50.0, 95th is 95.0
         y_min = np.linspace(0, 100, 101)
@@ -93,16 +93,16 @@ class TestSensitivityAndReporting(unittest.TestCase):
             1.0: pd.DataFrame({'Y_Min_Estimation': y_min + 5, 'Y_Max_Estimation': y_max - 5}) 
         }
 
-        # 2. Run Reporter
+        # Run Reporter
         reporter = RobustnessReporter(mock_results_map)
         metrics = reporter.get_metrics_dictionary()
 
-        # 3. Expected Mathematical Derivations based on y_max (Conservative limit)
+        # Expected mathematical derivations based on y_max (Conservative limit)
         # P05 of y_max = 15.0
         # P50 (Median) of y_max = 60.0
         # P95 of y_max = 105.0
         
-        # 4. Assertions
+        # Assertions
         # Safety Buffer = P95(y_max) - Median(y_max) -> 105.0 - 60.0 = 45.0
         self.assertEqual(metrics['SAFETY BUFFER REQUIRED'], 45.0, 
                          "Safety Buffer calculation failed.")

@@ -96,7 +96,7 @@ class TestEmpiricalDataProcessor(unittest.TestCase):
             simulation_end_year=2050
         )
         
-        # Execute the Wang ML Ensemble 
+        # Execute the ML Ensemble (Currently the methods from Wang paper on Bayesian MFA are implemented)
         core, bound_min, bound_max = processor._evaluate_proxy_ensembles(flow_data, 'GDP')
         
         # Validate that no value in any array drops below zero

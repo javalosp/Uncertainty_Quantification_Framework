@@ -6,10 +6,19 @@ class MFAAuditParser:
     Ingests and validates a static MFA dataset for retrospective auditing.
     Extracts network topology and categorises uncertainty for the Hybrid IRS engine.
     """
-    def __init__(self, filepath):
-        self.filepath = filepath
-        self.raw_data = None
-        
+    #def __init__(self, filepath):
+    #    self.filepath = filepath
+    #    self.raw_data = None
+    #    
+
+    def __init__(self, schema_source):
+        """
+        Initialises the parser. 
+        Accepts either a file path string OR a Pandas dataframe directly in memory.
+        """
+        self.df_schema = None
+        self.schema_path = None
+
         # Parsed categorisations for the math engine
         self.nodes = set()
         self.topology_edges = []
@@ -17,28 +26,45 @@ class MFAAuditParser:
         self.epistemic_params = {}
         self.calculated_params = {}
         self.deterministic_params = {}
+        
+        if isinstance(schema_source, str):
+            self.schema_path = schema_source
+        elif isinstance(schema_source, pd.DataFrame):
+            self.df_schema = schema_source.copy()
+        else:
+            raise ValueError("[!] schema_source must be a file path string or a Pandas dataframe.")
 
     def load_and_validate(self):
         """Loads the Excel schema and ensures all required columns exist."""
-        print(f"[*] Loading MFA schema from {self.filepath}...")
-        self.raw_data = pd.read_excel(self.filepath)
+        #print(f"[*] Loading MFA schema from {self.filepath}...")
+        #self.raw_data = pd.read_excel(self.filepath)
+
+        # Only read from disk if a DataFrame wasn't passed directly
+        if self.df_schema is None and self.schema_path is not None:
+            print(f"[*] Loading MFA schema from disk: {self.schema_path}")
+            self.df_schema = pd.read_excel(self.schema_path)
+        elif self.df_schema is not None:
+            print("[*] Loading MFA schema directly from memory.")
         
         required_cols = [
             'Parameter_ID', 'Source_Node', 'Target_Node', 'Type', 'Published_Mean',
             'Status', 'Uncertainty_Class', 'Distribution', 'Bound_Min', 'Bound_Max', 'CV_or_StdDev'
         ]
         
-        missing = [col for col in required_cols if col not in self.raw_data.columns]
+        #missing = [col for col in required_cols if col not in self.raw_data.columns]
+        missing = [col for col in required_cols if col not in self.df_schema.columns]
         if missing:
             raise ValueError(f"CRITICAL ERROR: Schema is missing columns: {missing}")
             
-        print(f"[*] Successfully loaded {len(self.raw_data)} parameters.")
+        #print(f"[*] Successfully loaded {len(self.raw_data)} parameters.")
+        print(f"[*] Successfully loaded {len(self.df_schema)} parameters.")
 
     def parse_network(self):
         """Builds the physical network map and categorises parameters for the IRS engine."""
         print("[*] Parsing network topology and uncertainty classifications...")
         
-        for index, row in self.raw_data.iterrows():
+        #for index, row in self.raw_data.iterrows():
+        for index, row in self.df_schema.iterrows():
             param_id = row['Parameter_ID']
             
             # Build network topology

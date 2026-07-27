@@ -21,7 +21,7 @@ class TestPropagationEngines(unittest.TestCase):
         At alpha=1.0 (The Core), Epistemic bounds should collapse to a single value.
         At alpha=0.0 (The Envelope), Epistemic bounds should be at their maximum width.
         """
-        # 1. Setup Mock Data (One Aleatory flow, One Epistemic flow)
+        # Setup mock data (one Aleatory flow, one Epistemic flow)
         mock_data = pd.DataFrame([
             {
                 'Flow_Name': 'Epistemic_Flow',
@@ -43,13 +43,13 @@ class TestPropagationEngines(unittest.TestCase):
         # Both flows contribute 1:1 to the final impact
         engine.define_impact_model(specific_k={'Epistemic_Flow': 1.0, 'Aleatory_Flow': 1.0})
 
-        # 2. Run simulation for the two extremes of possibility
+        # Run simulation for the two extremes of possibility
         results = engine.run_simulation(n_iterations=100, seed=42, alpha_cuts=[0.0, 1.0])
 
         df_alpha_0 = results[0.0]
         df_alpha_1 = results[1.0]
 
-        # 3. Assertions for Alpha = 1.0 (The Core)
+        # Assertions for Alpha = 1.0 (The Core)
         # Because Epistemic width collapses to 0, Y_Min and Y_Max should be identical for every iteration
         # (The remaining variance is purely the shared Aleatory Monte Carlo noise)
         np.testing.assert_array_almost_equal(
@@ -58,7 +58,7 @@ class TestPropagationEngines(unittest.TestCase):
             err_msg="Failed: At alpha=1.0, Y_Min and Y_Max should be identical."
         )
 
-        # 4. Assertions for Alpha = 0.0 (The Envelope)
+        # Assertions for Alpha = 0.0 (The Envelope)
         # Epistemic width is at its maximum (10 vs 30). Y_Max must be strictly greater than Y_Min.
         self.assertTrue(
             np.all(df_alpha_0['Y_Max_Estimation'] > df_alpha_0['Y_Min_Estimation']),
@@ -74,7 +74,7 @@ class TestPropagationEngines(unittest.TestCase):
         """
         n_steps = 3 # 3 Years: t=0, t=1, t=2
         
-        # 1. Setup Mock Time-Series Data
+        # Setup mock Time-Series data
         # We use purely static Epistemic arrays to easily track the exact math
         mock_dyn_data = pd.DataFrame([
             {
@@ -101,7 +101,7 @@ class TestPropagationEngines(unittest.TestCase):
             }
         ])
 
-        # 2. Instantiate Dynamic Engine
+        # Instantiate Dynamic Engine
         start_year = 2020
         end_year = 2022
         engine = DynamicPropagationEngine(mock_dyn_data, start_year, end_year)
@@ -109,10 +109,10 @@ class TestPropagationEngines(unittest.TestCase):
         # K-Factors: 1.0 = positive accumulation, -1.0 = subtraction
         engine.define_impact_model(specific_k={'Inflow': 1.0, 'Outflow': -1.0})
 
-        # 3. Run Dynamic Simulation
+        # Run Dynamic Simulation
         results = engine.run_dynamic_simulation(n_iterations=10, seed=42, alpha_cuts=[1.0])
         
-        # 4. Assertions on the Stock Accumulation Matrix
+        # Assertions on the Stock Accumulation Matrix
         # Shape is (iterations, time_steps)
         stock_matrix = results[1.0]['Stock_Max_TS'] 
         

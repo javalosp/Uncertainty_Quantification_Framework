@@ -77,8 +77,8 @@ class RobustnessReporter:
         limit_flawed = stats_max['95%']
         ignorance_penalty = limit_flawed - limit_accurate
 
-        # Nomina metrics (Alpha = 1)
-        # This represents the "Best Estimate" range, usually centered on the mean.
+        # Nominal metrics (Alpha = 1)
+        # This represents the "Best Estimate" range, usually centred on the mean.
         nominal_p05 = np.nan
         nominal_p95 = np.nan
         if self.df_core is not None:
@@ -103,11 +103,11 @@ class RobustnessReporter:
     def generate_pbox_plot(self, target_limit=None, filename="pbox_fuzzy.png", 
                            xlabel="Impact", title="Robustness: Fuzzy P-Box"):
         
-        plt.figure(figsize=(12, 7)) # Slightly wider for readability
+        plt.figure(figsize=(12, 7))
         
         sorted_alphas = sorted(self.results_map.keys())
         
-        # 1. PLOT CURVES
+        # PLOT CURVES
         for alpha in sorted_alphas:
             df = self.results_map[alpha]
             y_min_sorted = np.sort(df['Y_Min_Estimation'])
@@ -130,12 +130,14 @@ class RobustnessReporter:
                 plt.plot(y_max_sorted, probs, color='blue', linestyle='-', linewidth=2)
             
             # CASE C: Intermediate Alphas - Visual Context only
+            # This can be confusing as adds more lines (and legends) making the figure packed.
+            # Maybe useful for explainig the concept of "family" of CDF for defining the P-Box
             #else:
                 #plt.plot(y_min_sorted, probs, color='gray', linestyle=':', linewidth=0.5, alpha=0.5)
                 #plt.plot(y_max_sorted, probs, color='gray', linestyle=':', linewidth=0.5, alpha=0.5)
 
-        # 2. ANNOTATIONS (Restored Features)
-        # We calculate metrics based on the Conservative Curve (Alpha=0 Max)
+        # ANNOTATIONS
+        # Calculate metrics based on the Conservative Curve (Alpha=0 Max)
         # because safety margins are always defined by the worst-case boundary.
         df_cons = self.df_conservative
         y_cons_sorted = np.sort(df_cons['Y_Max_Estimation'])
@@ -158,7 +160,6 @@ class RobustnessReporter:
         if target_limit:
             plt.axvline(target_limit, color='black', linestyle='-', linewidth=2, label=f'Target ({target_limit})')
 
-        # 3. FORMATTING
         plt.xlabel(xlabel, fontsize=18)
         plt.ylabel('Cumulative Probability (Reliability)', fontsize=18)
         plt.title(title, fontsize=14)
@@ -166,7 +167,6 @@ class RobustnessReporter:
         plt.grid(True, which='both', linestyle=':', alpha=0.6)
         plt.tight_layout()
         
-        # Save and Close
         try:
             plt.savefig(filename, dpi=300)
             print(f"[Module 3] Plot saved to {filename}")
@@ -176,13 +176,13 @@ class RobustnessReporter:
 
     def print_executive_summary(self, target_limit=None, unit_label="units"):
         """
-        Restores the detailed breakdown of Risk (Aleatory vs Epistemic)
+        Generates the detailed breakdown of Risk (Aleatory vs Epistemic)
         using the Alpha=0 (Conservative) case as the primary design basis.
         """
         metrics = self.get_metrics_dictionary()
         if not metrics:
             return
-        # 1. CALCULATE STATISTICS (Based on Alpha=0 Envelope)
+        # CALCULATE STATISTICS (Based on Alpha=0 Envelope)
         df_0 = self.df_conservative
         
         # Optimistic Curve (Best Case assumptions)
@@ -211,12 +211,12 @@ class RobustnessReporter:
         s_max_1 = df_1['Y_Max_Estimation'].describe(percentiles=[0.95])
         gap_1 = s_max_1['95%'] - s_min_1['95%']
         
-        # 2. PRINT REPORT
+        # PRINT REPORT
         print("\n" + "="*60)
         print(" EXECUTIVE ROBUSTNESS REPORT")
         print("="*60)
         
-        # --- SECTION 1: ALEATORY ---
+        # SECTION 1: ALEATORY
         print(f"1. ALEATORY VARIABILITY (Natural Fluctuation)")
         print(f"   The system naturally fluctuates due to input variability (Slope).")
         print(f"   (Calculated on the Conservative/Worst-Case envelope)")
@@ -226,7 +226,7 @@ class RobustnessReporter:
         print(f"       (You must design {safety_buffer:.4f} above the average to handle normal swings.)")
         print("-" * 60)
 
-        # --- SECTION 2: EPISTEMIC ---
+        # SECTION 2: EPISTEMIC
         print(f"2. EPISTEMIC UNCERTAINTY (The Ignorance Penalty)")
         print(f"   Risk due to missing data (The Gap between curves).")
         print(f"   - Limit if Data Accurate:    {limit_optimistic:.4f} {unit_label}")
@@ -234,7 +234,7 @@ class RobustnessReporter:
         print(f"   >>> IGNORANCE PENALTY:       {ignorance_penalty:.4f} {unit_label}")
         print(f"       (You are carrying this extra risk solely because of poor data.)")
         
-        # --- SECTION 3: NOMINAL ---
+        # SECTION 3: NOMINAL
         if not np.isnan(metrics['Nominal Range (P05)']):
             print("-" * 60)
             print(f"3. NOMINAL REFERENCE (Best Estimate / Alpha=1)")
@@ -242,13 +242,13 @@ class RobustnessReporter:
             print(f"   - Nominal Range (P05 - P95): {metrics['Nominal Range (P05)']:.4f} to {metrics['Nominal Range (P95)']:.4f} {unit_label}")
             print(f"   * Check: SimaPro Total should fall inside this range.")
 
-        # --- SECTION 4: FUZZY INSIGHT ---
+        # SECTION 4: FUZZY INSIGHT
         print(f"   [Fuzzy Insight]")
         print(f"   - If inputs cluster around their mean (alpha=1),")
         print(f"     the ignorance gap shrinks to: {gap_1:.4f} {unit_label}")
         print("-" * 60)
 
-        # --- SECTION 5: COMPLIANCE ---
+        # SECTION 5: COMPLIANCE (if target limit provided)
         if target_limit:
             prob_success_best = np.mean(df_0['Y_Min_Estimation'] < target_limit)
             prob_success_worst = np.mean(df_0['Y_Max_Estimation'] < target_limit)
@@ -337,7 +337,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
         self.time_steps = np.arange(start_year, end_year + 1)
 
     def generate_temporal_envelope_plot(self, target_limit=None, filename="temporal_fan_chart.png", 
-                                        ylabel="Copper Stock (Megatonnes)", title="Dynamic MFA: Copper Cycle Projection"):
+                                        ylabel="Material Stock (Megatonnes)", title="Dynamic MFA: Material Cycle Projection"):
         """
         Generates a fan chart showing the expansion of uncertainty from t=0 to t=T.
         """
@@ -348,7 +348,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
             print("Error: Incomplete dynamic simulation results.")
             return
 
-        # 1. Extract 2D Arrays (Shape: N_iterations x T_steps)
+        # Extract 2D Arrays (Shape: N_iterations x T_steps)
         # Conservative Envelope (Alpha = 0.0) -> Epistemic + Aleatory
         stock_min_0 = self.df_conservative['Stock_Min_TS']
         stock_max_0 = self.df_conservative['Stock_Max_TS']
@@ -356,7 +356,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
         # Core Envelope (Alpha = 1.0) -> Pure Aleatory
         stock_max_1 = self.df_core['Stock_Max_TS'] 
 
-        # 2. Calculate Time-Series Percentiles (Collapse N iterations via axis=0)
+        # Calculate Time-Series Percentiles (Collapse N iterations via axis=0)
         # Epistemic Bounds (Outer Fan)
         epi_lower = np.percentile(stock_min_0, 5, axis=0)
         epi_upper = np.percentile(stock_max_0, 95, axis=0)
@@ -368,7 +368,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
         # Median Trajectory (Best Estimate)
         median_trajectory = np.median(stock_max_1, axis=0)
 
-        # 3. Plotting the Fan Chart
+        # Plotting the Fan Chart
         plt.figure(figsize=(12, 7))
         
         # Plot Epistemic Ignorance Gap (The grey penalty area)
@@ -386,7 +386,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
         if target_limit:
             plt.axhline(target_limit, color='red', linestyle='--', linewidth=2, label=f'Climate Constraint ({target_limit})')
 
-        # 4. Formatting
+        # Formatting
         plt.xlabel("Year", fontsize=14)
         plt.ylabel(ylabel, fontsize=14)
         plt.title(title, fontsize=16)
@@ -403,8 +403,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
             print(f"Warning: Could not save dynamic plot. {e}")
         plt.close()
 
-    # STEP 3: THE COLOR-CODING ENGINE
-    # ====================================================================
+    # Helper functions: color coding
     def _get_epistemic_color(self, score, alpha=0.5):
         """
         Maps an S_Epistemic score (0.0 to 1.0) to a Hex color string.
@@ -429,8 +428,8 @@ class DynamicRobustnessReporter(RobustnessReporter):
 
     def _extract_flow_colors(self, target_year, sensitivity_analyser=None):
         """
-        Runs the time-sliced GSA for the target year and returns a dictionary 
-        mapping each Flow_Name to its calculated Hex color.
+        Runs the time-sliced (Global Sensitivity Analysis) GSA for the target year
+        and returns a dictionary mapping each Flow_Name to its calculated Hex color.
         """
         color_map = {}
         
@@ -453,11 +452,10 @@ class DynamicRobustnessReporter(RobustnessReporter):
             
         return color_map
     
-    # STEP 4: CONSTRUCTING THE PLOTLY SANKEY OBJECT
-    # ====================================================================
+    # Generate Sankey
     def generate_uncertainty_sankey(self, target_year, structured_params, sensitivity_analyser=None, filename="sankey.html"):
         """
-        Constructs the interactive Plotly Sankey diagram using topology and color maps.
+        Constructs an interactive Sankey diagram (Plotly library) using topology and color maps.
         Extracts median values for width and extreme alpha=0 bounds for tooltips.
         """
         if target_year < self.start_year or target_year > self.end_year:
@@ -466,10 +464,10 @@ class DynamicRobustnessReporter(RobustnessReporter):
         # Temporal index for array slicing
         t_idx = target_year - self.start_year
 
-        # 1. Fetch the colors based on Epistemic Ignorance (Step 3)
+        # Fetch the colors based on Epistemic Ignorance (Step 3)
         flow_colors = self._extract_flow_colors(target_year, sensitivity_analyser)
 
-        # 2. Build unique node list and index mapping (Topology)
+        # Build unique node list and index mapping (Topology)
         all_nodes = set()
         for _, row in structured_params.iterrows():
             all_nodes.add(row.get('Source', 'Unknown_Source'))
@@ -478,7 +476,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
         node_labels = list(all_nodes)
         node_indices = {name: i for i, name in enumerate(node_labels)}
 
-        # 3. Extract Plotly Link Data
+        # Extract Link Data
         source_idx = []
         target_idx = []
         values = []
@@ -486,7 +484,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
         customdata = []
 
         # We need the arrays to calculate median width and extreme bounds.
-        # Alpha=0.0 gives the widest bounds (absolute ignorance).
+        # Alpha=0.0 gives the widest bounds (highest ignorance).
         # Alpha=1.0 gives the core mode (used for the visual flow width).
         alpha_base = min(self.results_map.keys()) # Usually 0.0
         alpha_core = max(self.results_map.keys()) # Usually 1.0
@@ -528,7 +526,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
             # Customdata fuels the interactive hover tooltip: [Name, Median, Min, Max]
             customdata.append([flow_name, median_val, bound_min, bound_max])
 
-        # 4. Construct the Plotly Figure
+        # Create the figure
         fig = go.Figure(data=[go.Sankey(
             valueformat=".2f",
             valuesuffix=" Mt",
@@ -537,7 +535,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
                 thickness=25,
                 line=dict(color="black", width=0.5),
                 label=node_labels,
-                color="#333333" # Dark grey nodes for contrast
+                color="#333333" # Dark grey nodes
             ),
             link=dict(
                 source=source_idx,
@@ -545,7 +543,7 @@ class DynamicRobustnessReporter(RobustnessReporter):
                 value=values,
                 color=link_colors,
                 customdata=customdata,
-                # The customized HTML Tooltip
+                # The customised HTML Tooltip
                 hovertemplate=
                 "<b>%{customdata[0]}</b><br />" +
                 "Median Forecast: %{customdata[1]:.2f} Mt<br />" +
@@ -561,25 +559,24 @@ class DynamicRobustnessReporter(RobustnessReporter):
             paper_bgcolor='white'
         )
 
-        # 5. Save the interactive HTML
+        # Save the interactive diagram as HTML
         fig.write_html(filename)
         print(f"[Module 3 - Dynamic] Uncertainty Sankey saved to {filename}")
 
-    # NEW: NETWORK TOPOLOGY GRAPH (PYVIS + NETWORKX)
-    # ====================================================================
+    # NETWORK TOPOLOGY GRAPH (PYVIS + NETWORKX)
     def generate_network_topology(self, target_year, structured_params, sensitivity_analyser=None, filename="network_topology.html"):
         """
-        Generates an interactive, physics-based network graph using pyvis.
-        Ideal for auditing system boundaries and highly disaggregated model structures.
+        Generates an interactive, physics-based network graph using pyvis library.
+        Allows for checking system boundaries and highly disaggregated model structures.
         """
-        # Fetch the same sensitivity colors we used for the Sankey
+        # Fetch the same sensitivity colors used for the Sankey
         flow_colors = self._extract_flow_colors(target_year, sensitivity_analyser)
 
-        # Initialize a directed PyVis network
-        # We use a white background with dark text for a clean, academic look
+        # Initialise a network (PyVis)
+        # (white background and dark text)
         net = Network(height='800px', width='100%', directed=True, bgcolor='#ffffff', font_color='#333333')
         
-        # Pyvis requires nodes to be added before edges. We'll track what we've added.
+        # Pyvis requires nodes to be added before edges
         added_nodes = set()
 
         for _, row in structured_params.iterrows():
@@ -609,14 +606,15 @@ class DynamicRobustnessReporter(RobustnessReporter):
                 arrows='to'
             )
 
-        # 3. Apply physics layout for automatic organisation
-        # We use hierarchical repulsion so nodes don't overlap in complex models
+        # Apply physics layout for automatic organisation
+        # Use hierarchical repulsion so nodes don't overlap in complex models
+        # This doesn't ensure a correct visualisation. interactive tweak is still required in the final HTML
         net.repulsion(node_distance=200, central_gravity=0.2, spring_length=200, spring_strength=0.05, damping=0.09)
         
-        # Optional: Adds a UI panel to the HTML so you can manually tweak the physics
+        # Adds a UI panel to the HTML so you can manually tweak the physics
         net.show_buttons(filter_=['physics'])
 
-        # 4. Save to HTML
+        # Save to HTML
         net.write_html(filename)
         print(f"[Module 3 - Dynamic] Network Topology Graph saved to {filename}")
 
@@ -634,7 +632,7 @@ class AuditReporter:
 
     def generate_diagnostic_tornado_chart(self, target_param, input_params, filename):
         """
-        Generates an interactive Plotly Tornado Chart to rank the sensitivity 
+        Generates an interactive Tornado Chart to rank the sensitivity 
         of a target calculated parameter against all sampled inputs.
         """
         correlations = {}
@@ -662,7 +660,7 @@ class AuditReporter:
         # Color code: Blue for positive correlation, Red for negative (inverse) correlation
         colors = ['#ef553b' if c < 0 else '#636efa' for c in sorted_corrs]
 
-        # Build the interactive Plotly figure
+        # Create the interactive figure
         fig = go.Figure(go.Bar(
             x=sorted_corrs,
             y=sorted_params,

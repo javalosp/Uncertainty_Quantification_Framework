@@ -4,15 +4,22 @@ import pandas as pd
 class SensitivityAnalyser:
     """
     Module 4: Global Sensitivity Analysis (GSA)
-    Responsibility: Decompose the uncertainty to identify key drivers.
+        -> Decompose the uncertainty to identify key drivers.
     
     Methods:
     - Epistemic Sensitivity: Contribution to the P-Box Width (Ignorance).
     - Aleatory Sensitivity: Contribution to the Variance (Natural Variability).
     
     Since LCI models are linear (Sum of Inputs * Factors), we use Analytical Decomposition
-    which is faster and more precise than Monte Carlo Sobol indices.
+    (faster and more precise than Monte Carlo Sobol indices.)
     """
+
+    # SCALING FACTOR: 
+    # We convert StdDev into a "90% Confidence Interval Width" (P95-P05).
+    # For a normal distribution, P95-P05 approx equals 3.29 standard deviations.
+    # This ensures we compare "Range vs Range" instead of "Range vs Sigma".
+    SIGMA_TO_RANGE_FACTOR = 3.29
+    
     def __init__(self, characterised_data, impact_factors):
         """
         Args:
@@ -31,25 +38,19 @@ class SensitivityAnalyser:
         
         temp_stats = []
         
-        # SCALING FACTOR: 
-        # We convert StdDev into a "90% Confidence Interval Width" (P95-P05).
-        # For a normal distribution, P95-P05 approx equals 3.29 standard deviations.
-        # This ensures we compare "Range vs Range" instead of "Range vs Sigma".
-        SIGMA_TO_RANGE_FACTOR = 3.29
-        
         for index, row in self.data.iterrows():
             flow = row['Flow_Name']
             k = self.k_map.get(flow, 0.0)
             
             if k == 0: continue
                 
-            # 1. EPISTEMIC (Width contribution)
+            # EPISTEMIC (Width contribution)
             w_contribution = 0.0
             if row['Type'] == 'Epistemic':
                 p = row['Params_Epistemic']
                 w_contribution = abs(k) * (p['max'] - p['min'])
             
-            # 2. ALEATORY (Dual Calculation)
+            # ALEATORY (Dual Calculation)
             var_contribution = 0.0     # For Aleatory List (Sobol-like)
             range_contribution = 0.0   # For Overall List (Magnitude-like)
             
@@ -59,26 +60,26 @@ class SensitivityAnalyser:
                 mu = p['mu_ln']
                 var_x = np.exp(2*mu + s2) * (np.exp(s2) - 1)
                 
-                # A. Variance Contribution (k^2 * var)
+                # Variance Contribution (k^2 * var)
                 # This restores the 75% dominance for the Aleatory-only list
                 var_contribution = (k**2) * var_x
                 
-                # B. Range Contribution (k * sigma * 3.29)
+                # Range Contribution (k * sigma * 3.29)
                 # This keeps the logic correct for the Overall comparison
                 std_dev = abs(k) * np.sqrt(var_x)
-                range_contribution = std_dev * SIGMA_TO_RANGE_FACTOR
+                range_contribution = std_dev * self.SIGMA_TO_RANGE_FACTOR
             
             temp_stats.append({
                 'Flow_Name': flow,
                 'Epistemic_Width': w_contribution,
-                'Aleatory_Variance': var_contribution,   # <--- USE VARIANCE HERE
-                'Aleatory_Range': range_contribution     # <--- USE RANGE HERE
+                'Aleatory_Variance': var_contribution,
+                'Aleatory_Range': range_contribution
             })
             
             total_epistemic_width += w_contribution
             total_aleatory_variance += var_contribution
 
-        # --- CALCULATE SCORES ---
+        # CALCULATE SCORES
         max_score = 0
         processed_stats = []
         
@@ -101,13 +102,13 @@ class SensitivityAnalyser:
         
         final_results = []
         for item in processed_stats:
-            # 1. Epistemic Index (Normalized by Total Width)
+            # Epistemic Index (Normalised by Total Width)
             s_epi_norm = item['S_Epistemic_Raw'] / total_epistemic_width if total_epistemic_width > 0 else 0
             
-            # 2. Aleatory Index (Normalized by Total VARIANCE) -> Restores 75%
+            # Aleatory Index (Normalised by Total VARIANCE) -> Restores 75%
             s_ale_norm = item['S_Aleatory_Var_Raw'] / total_aleatory_variance if total_aleatory_variance > 0 else 0
             
-            # 3. Combined Index (Normalized by Total Magnitude) -> Keeps 26%
+            # Combined Index (Normalised by Total Magnitude) -> Keeps the rest %
             s_combined = item['Combined_Score'] / total_magnitude if total_magnitude > 0 else 0
             
             final_results.append({
@@ -125,7 +126,7 @@ class SensitivityAnalyser:
             
         top_epi = self.results.sort_values('S_Epistemic', ascending=False).head(n)
         top_ale = self.results.sort_values('S_Aleatory', ascending=False).head(n)
-        # New: Top Combined Drivers
+        # Top Combined Drivers
         top_comb = self.results.sort_values('S_Combined', ascending=False).head(n)
         
         return top_epi, top_ale, top_comb
@@ -155,15 +156,13 @@ class DynamicSensitivityAnalyser(SensitivityAnalyser):
         total_aleatory_variance = 0.0
         temp_stats = []
         
-        SIGMA_TO_RANGE_FACTOR = 3.29 # Converts StdDev to 90% Confidence Interval
-        
         for index, row in self.data.iterrows():
             flow = row['Flow_Name']
             k = self.k_map.get(flow, 0.0)
             
             if k == 0: continue
                 
-            # 1. EPISTEMIC (Width contribution at time t)
+            # EPISTEMIC (Width contribution at time t)
             w_contribution = 0.0
             if row['Type'] == 'Epistemic':
                 p_ts = row['Params_Epistemic_TS']
@@ -172,7 +171,7 @@ class DynamicSensitivityAnalyser(SensitivityAnalyser):
                 max_t = p_ts['max'][t_index]
                 w_contribution = abs(k) * (max_t - min_t)
             
-            # 2. ALEATORY (Variance/Range contribution at time t)
+            # ALEATORY (Variance/Range contribution at time t)
             var_contribution = 0.0     
             range_contribution = 0.0   
             
@@ -187,7 +186,7 @@ class DynamicSensitivityAnalyser(SensitivityAnalyser):
                 
                 var_contribution = (k**2) * var_x
                 std_dev = abs(k) * np.sqrt(var_x)
-                range_contribution = std_dev * SIGMA_TO_RANGE_FACTOR
+                range_contribution = std_dev * self.SIGMA_TO_RANGE_FACTOR
             
             temp_stats.append({
                 'Flow_Name': flow,
@@ -199,7 +198,7 @@ class DynamicSensitivityAnalyser(SensitivityAnalyser):
             total_epistemic_width += w_contribution
             total_aleatory_variance += var_contribution
 
-        # --- CALCULATE NORMALIZED SCORES FOR TARGET YEAR ---
+        # CALCULATE NORMALISED SCORES FOR TARGET YEAR ---
         max_score = 0
         processed_stats = []
         

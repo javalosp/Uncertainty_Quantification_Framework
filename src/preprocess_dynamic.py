@@ -29,10 +29,33 @@ class EmpiricalDataProcessor:
         self.end_year = simulation_end_year
         self.target_years = np.arange(self.start_year, self.end_year + 1)
         self.structured_results = []
+        self.correlation_matrix = None
         if proxy_data is not None:
             self.proxy_data = proxy_data.copy()
         else:
             None
+
+    def generate_correlation_matrix(self):
+        """
+        Auto-calculates the correlation matrix directly from the raw historical data.
+        Uses Spearman rank correlation to capture non-linear monotonic relationships.
+        """
+        print("      -> Calculating empirical correlation matrix from historical data...")
+        if self.raw_data is None or self.raw_data.empty:
+            print("         [Warning] No raw data available. Defaulting to independent sampling.")
+            return None
+            
+        # Calculate Spearman correlation
+        corr_matrix = self.raw_data.corr(method='spearman')
+        
+        # Clean the matrix: Fill NaNs (e.g., zero variance columns) with 0.0
+        corr_matrix = corr_matrix.fillna(0.0)
+        
+        # Ensure the diagonal is exactly 1.0 (perfect self-correlation)
+        np.fill_diagonal(corr_matrix.values, 1.0)
+        
+        self.correlation_matrix = corr_matrix
+        return self.correlation_matrix
     
     # Algorithmic Data Quatlity Indicators (DQI)
     # -------------------------------------------------------------------------
@@ -149,7 +172,7 @@ class EmpiricalDataProcessor:
             warnings.simplefilter("ignore")
             gp.fit(X_train, y_train)
 
-        # Predict over the entire forecasting horizon (2024 to 2050)
+        # Predict over the entire forecasting horizon (e.g. 2025 to 2050)
         X_pred = self.target_years.reshape(-1, 1)
         mu_pred, std_pred = gp.predict(X_pred, return_std=True)
 
@@ -206,6 +229,7 @@ class EmpiricalDataProcessor:
         X_target = self.proxy_data.loc[self.target_years, proxy_name].values.astype(float).reshape(-1, 1)
 
         # Define the model ensemble (basen on Wang et al.)
+        # TODO: Expand models catalog!
         models = {
             'Linear': LinearRegression(),
             'Ridge': Ridge(alpha=1.0),
@@ -421,9 +445,8 @@ class EmpiricalDataProcessor:
                 'Delay_Mode_Dist': scrap_mode,
                 'Delay_Max_Dist': scrap_max,
                 'Contrib_Header': contrib_header,
-                # Append the new physical mapping attributes
-                'Source': source_node,
-                'Target': target_node
+                'Source': source_node, # Append the physical mapping attributes
+                'Target': target_node  # Append the physical mapping attributes
             })
 
         df_structured = pd.DataFrame(self.structured_results)
