@@ -23,7 +23,11 @@ class MISO2Connector(BaseConnector):
         self.raw_data = pd.read_csv(self.filepath, low_memory=False)
 
     def clean_and_filter(self, target_material: str = None, target_years: list = None, **kwargs):
-        """Standardizes columns, melts wide-format datasets, and applies filters."""
+        """Standardises columns, melts wide-format datasets, and applies filters."""
+        # Load raw data if not already fetched
+        if self.raw_data is None:
+            self.fetch_data(**kwargs)
+
         df = self.raw_data.copy()
         df.columns = [str(col).strip() for col in df.columns]
         
@@ -80,6 +84,10 @@ class MISO2Connector(BaseConnector):
 
     def to_universal_schema(self, **kwargs) -> pd.DataFrame:
         """Maps MISO2 metabolism variables into the 12-column Universal MFA Schema."""
+        # Load raw data if not already fetched
+        if self.cleaned_data is None:
+            self.clean_and_filter(**kwargs)
+            
         df = self.cleaned_data.copy()
         records = []
         

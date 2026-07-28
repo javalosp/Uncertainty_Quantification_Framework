@@ -4,7 +4,7 @@ import numpy as np
 
 
 class VariationalLSTM(nn.Module):
-    """LSTM model with persistent Monte Carlo Dropout during evaluation[cite: 7]."""
+    """LSTM model with persistent Monte Carlo Dropout during evaluation."""
 
     def __init__(self, input_size: int, hidden_size: int, num_layers: int = 2, dropout_rate: float = 0.2):
         super(VariationalLSTM, self).__init__()
@@ -24,7 +24,7 @@ class VariationalLSTM(nn.Module):
         self.fc_logvar = nn.Linear(hidden_size, 1)
 
     def forward(self, x: torch.Tensor):
-        # Apply dropout manual pass for single-layer edge cases[cite: 7]
+        # Apply dropout manual pass for single-layer edge cases
         lstm_out, _ = self.lstm(x)
         last_step = lstm_out[:, -1, :]
         last_step = self.dropout(last_step)
@@ -34,8 +34,8 @@ class VariationalLSTM(nn.Module):
         return mean, log_var
 
     def predict_with_uncertainty(self, x: torch.Tensor, n_samples: int = 100):
-        """Runs n_samples forward passes with activated dropout to estimate uncertainty[cite: 7]."""
-        self.train()  # Keep dropout enabled during inference[cite: 7]
+        """Runs n_samples forward passes with activated dropout to estimate uncertainty."""
+        self.train()  # Keep dropout enabled during inference
 
         means = []
         log_vars = []
@@ -46,19 +46,19 @@ class VariationalLSTM(nn.Module):
                 means.append(m.unsqueeze(0))
                 log_vars.append(lv.unsqueeze(0))
 
-        # Stack predictions: shape [n_samples, batch_size, 1][cite: 7]
+        # Stack predictions: shape [n_samples, batch_size, 1]
         means = torch.cat(means, dim=0)
         vars_aleatoric = torch.exp(torch.cat(log_vars, dim=0))
 
-        # Epistemic uncertainty = Variance of Monte Carlo means[cite: 7]
+        # Epistemic uncertainty = Variance of Monte Carlo means
         epistemic_var = torch.var(means, dim=0)
-        # Aleatoric uncertainty = Mean of predicted variances[cite: 7]
+        # Aleatoric uncertainty = Mean of predicted variances
         aleatoric_var = torch.mean(vars_aleatoric, dim=0)
 
         total_var = epistemic_var + aleatoric_var
         overall_mean = torch.mean(means, dim=0)
 
-        # Output all 4 components: mean, total_std, aleatoric_std, epistemic_std[cite: 7]
+        # Output all 4 components: mean, total_std, aleatoric_std, epistemic_std
         return (
             overall_mean.cpu().numpy(),
             torch.sqrt(total_var).cpu().numpy(),
